@@ -1,0 +1,20 @@
+[Unit]
+Description="Fake service"
+Requires=multi-user.target
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+UMask=002
+ExecStart=/usr/local/bin/fakeService /usr/local/etc/fake.comf
+ExecStop=/usr/bin/kill $MAINPID
+ExecReload=/usr/bin/kill -HUP $MAINPID
+PIDFile=/var/run/fake.pid
+RemainAfterExit=true
+TimeoutSec=500
+TimeoutStopSec=500
+Restart=no
+
+[Install]
+WantedBy=multi-user.target
