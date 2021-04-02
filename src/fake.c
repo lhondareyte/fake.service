@@ -45,15 +45,15 @@ char config_file [256];
 
 void fake_quit(int r) {
 	if ( r == SIGHUP ) {
-		get_config(config_file, &cnf);
+		get_config(config_file, &config);
 		return;
 	}
-	fprintf (stderr, "Stopping %s ...\n", cnf.name);
+	fprintf (stderr, "Stopping %s ...\n", config.name);
 	syslog(LOG_NOTICE,"Signal received (%d), quitting.\n", r);
 	fclose(lockfile);
-	remove (cnf.lock);
+	remove (config.lock);
 	closelog();
-	execl("/bin/sh", "sh", "-c", (char*)cnf.stop, NULL);
+	execl("/bin/sh", "sh", "-c", (char*)config.stop, NULL);
 	perror("execl error");
 	exit(1);
 }
@@ -66,7 +66,6 @@ int main(int argc, char *argv[]) {
                 exit (1);
         }
 	else {
-		memset(config_file, 0, sizeof(config_file));
 		sprintf(config_file,"%s", argv[1]);
 	}
 
@@ -78,30 +77,30 @@ int main(int argc, char *argv[]) {
 	else fclose(conffile);
 
 	 // Getting valid configuration
-	memset(&cnf, 0, sizeof(cnf));
-	if (( get_config(config_file, &cnf)) == -1 ) {
+	if (( get_config(config_file, &config)) == -1 ) {
 		fprintf(stderr, "%s : parse error.\n", config_file);
 		exit(1);
 	}
-	fprintf (stderr, "Starting %s ...\n", cnf.name);
+	fprintf (stderr, "Starting %s ...\n", config.name);
 
 	 // Open exclusive lock file to avoid multiple instances of daemon
-	if (( lockfile  = fopen(cnf.lock, "w")) == NULL) {
+	if (( lockfile  = fopen(config.lock, "w")) == NULL) {
 		fprintf(stderr, "Impossible de creer le verrou.\n");
-		perror(cnf.lock);
+		perror(config.lock);
 		return 1;
 	}
 	if (flock (fileno(lockfile), LOCK_EX | LOCK_NB) == -1) {
 		fprintf(stderr, "Impossible de prendre le verrou.\n");
-		perror (cnf.lock);
+		perror (config.lock);
 		return 1;
 	}
 
 	 // Logging
-	openlog(cnf.name, LOG_PID|LOG_NDELAY, LOG_DAEMON),
+	openlog(config.name, LOG_PID|LOG_NDELAY, LOG_DAEMON),
 		syslog(LOG_NOTICE, "Starting daemon.\n");
 
 	 // Signals handling
+	signal(SIGHUP, fake_quit);
 	signal(SIGINT, fake_quit);
 	signal(SIGTERM, fake_quit);
 
@@ -113,7 +112,7 @@ int main(int argc, char *argv[]) {
 	}
 	// Start real service and kill parent process 
 	if (process_id > 0 ) {
-		execl("/bin/sh", "sh", "-c", (char*)cnf.start, NULL);
+		execl("/bin/sh", "sh", "-c", (char*)config.start, NULL);
 		perror("execl error");
 		exit(1);
 	}	

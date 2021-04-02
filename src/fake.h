@@ -38,7 +38,7 @@ struct fake_config {
 	char start[MAXBUF];
 	char stop[MAXBUF];
 	char lock[MAXBUF];
-} cnf;
+} config;
 
 int get_config(char *, struct fake_config *);
 

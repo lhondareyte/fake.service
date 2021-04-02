@@ -1,5 +1,5 @@
 /*
- * Copyright (c)2021, Luc Hondareyte
+ * Copyright (c)2018-2021, Luc Hondareyte
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without 
@@ -27,54 +27,50 @@
 
 #include "fake.h"
 
-void del_doubleCommas(char *s) {
-	char *i, *j;
-	if ( s[0] == '"' ) {
-		for (i=j=s; *i; i++) {
-			if (*i != '"')
-				*(j++) = *i;
-		}
-		*j = '\0';
-	}
+void removeDoubleCommas(char *s) {
+    int j, n = strlen(s);
+    for (int i = j = 0; i < n; i++)
+        if (s[i] != '"')
+            s[j++] = s[i];
+ 
+    s[j] = '\0';
 }
 
 int get_config(char *filename, struct fake_config *s) {
 	FILE *file = fopen (filename, "r");
+	memset(s, 0, sizeof(*s));
 
 	if (file != NULL) {
 		char line[MAXBUF];
 		while(fgets(line, sizeof(line), file) != NULL) {
 			char *token; 	// Keywords
 			char *cfline; 	// Valid configuration line
-			// Skipping Commented line
+			// Skip comments
 			if ( line[0] == '#' ) {
 				continue;
 			}
-			// Skipping invalid line
+			// Skip invalid line
 			if ( strchr((char *)line, '=') == 0 ) {
 				continue;
 			}
 			else {
 				cfline=(char*)line;
+				removeDoubleCommas(cfline);
 				token = strsep(&cfline, "=" );
 				if (strcmp(token,"NAME") == 0) {
 					token = strsep(&cfline, "#\r\n" );
-					del_doubleCommas(token);
 					memcpy(s->name, token, strlen(token));
 				}
 				if (strcmp(token,"STOP") == 0) {
 					token = strsep(&cfline, "#\r\n" );
-					del_doubleCommas(token);
 					memcpy(s->stop, token, strlen(token));
 				}
 				if (strcmp(token,"START") == 0) {
 					token = strsep(&cfline, "#\r\n" );
-					del_doubleCommas(token);
 					memcpy(s->start, token, strlen(token));
 				}
 				if (strcmp(token,"LOCK") == 0) {
 					token = strsep(&cfline, "#\r\n" );
-					del_doubleCommas(token);
 					memcpy(s->lock, token, strlen(token));
 				}
 			}
@@ -84,7 +80,7 @@ int get_config(char *filename, struct fake_config *s) {
 		perror(filename);
 		return -1;
 	}
-	if ((s->name[0] == '\0') || (s->start[0] == '\0') || (s->stop[0] == '\0') || (s->lock[0] == '\0')) return -1;
+	if ((s->name[0] == '\0') || (s->stop[0] == '\0') || (s->start[0] == '\0') || (s->lock[0] == '\0')) return -1;
 	return 0;
 }
 
