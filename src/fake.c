@@ -32,23 +32,24 @@
 #include <sys/wait.h>
 #include <syslog.h>
 
-#include "fake.h"
+#include "config.h"
 
 FILE *lockfile = NULL;
 FILE *conffile = NULL;
 char config_file [256];
+struct config fconfig;
 
 void fake_quit(int r) {
 	if ( r == SIGHUP ) {
-		get_config(config_file, &config);
+		get_config(config_file, &fconfig);
 		return;
 	}
-	fprintf (stderr, "Stopping %s ...\n", config.name);
+	fprintf (stderr, "Stopping %s ...\n", fconfig.name);
 	syslog(LOG_NOTICE,"Signal received (%d), quitting.\n", r);
 	fclose(lockfile);
-	remove (config.lock);
+	remove (fconfig.lock);
 	closelog();
-	execl("/bin/sh", "sh", "-c", (char*)config.stop, NULL);
+	execl("/bin/sh", "sh", "-c", (char*)fconfig.stop, NULL);
 	perror("execl error");
 	exit(1);
 }
@@ -72,26 +73,26 @@ int main(int argc, char *argv[]) {
 	else fclose(conffile);
 
 	 // Getting valid configuration
-	if (( get_config(config_file, &config)) == -1 ) {
+	if (( get_config(config_file, &fconfig)) == -1 ) {
 		fprintf(stderr, "%s : parse error.\n", config_file);
 		exit(1);
 	}
-	fprintf (stderr, "Starting %s ...\n", config.name);
+	fprintf (stderr, "Starting %s ...\n", fconfig.name);
 
 	 // Open exclusive lock file to avoid multiple instances of daemon
-	if (( lockfile  = fopen(config.lock, "w")) == NULL) {
+	if (( lockfile  = fopen(fconfig.lock, "w")) == NULL) {
 		fprintf(stderr, "Impossible de creer le verrou.\n");
-		perror(config.lock);
+		perror(fconfig.lock);
 		return 1;
 	}
 	if (flock (fileno(lockfile), LOCK_EX | LOCK_NB) == -1) {
 		fprintf(stderr, "Impossible de prendre le verrou.\n");
-		perror (config.lock);
+		perror (fconfig.lock);
 		return 1;
 	}
 
 	 // Logging
-	openlog(config.name, LOG_PID|LOG_NDELAY, LOG_DAEMON),
+	openlog(fconfig.name, LOG_PID|LOG_NDELAY, LOG_DAEMON),
 		syslog(LOG_NOTICE, "Starting daemon.\n");
 
 	 // Signals handling
@@ -107,7 +108,7 @@ int main(int argc, char *argv[]) {
 	}
 	// Start real service and kill parent process 
 	if (process_id > 0 ) {
-		execl("/bin/sh", "sh", "-c", (char*)config.start, NULL);
+		execl("/bin/sh", "sh", "-c", (char*)fconfig.start, NULL);
 		perror("execl error");
 		exit(1);
 	}	

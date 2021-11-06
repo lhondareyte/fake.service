@@ -23,20 +23,16 @@
 #ifndef __FAKE_H__
 #define __FAKE_H__
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 #define MAXBUF 256
 
-struct fake_config {
+struct config {
 	char name[MAXBUF];
 	char start[MAXBUF];
 	char stop[MAXBUF];
 	char lock[MAXBUF];
-} config;
+};
 
-int get_config(char *, struct fake_config *);
+int get_config(char *, struct config *);
 
 #endif // __FAKE_H_
 

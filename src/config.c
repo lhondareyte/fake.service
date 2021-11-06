@@ -20,7 +20,10 @@
  * SOFTWARE.
  */
 
-#include "fake.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "config.h"
 
 void removeDoubleCommas(char *s) {
     int j, n = strlen(s);
@@ -31,7 +34,7 @@ void removeDoubleCommas(char *s) {
     s[j] = '\0';
 }
 
-int get_config(char *filename, struct fake_config *s) {
+int get_config(char *filename, struct config *s) {
 	FILE *file = fopen (filename, "r");
 	memset(s, 0, sizeof(*s));
 
